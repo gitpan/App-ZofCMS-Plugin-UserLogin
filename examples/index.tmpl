@@ -1,0 +1,13 @@
+plug_login => {
+    dsn => "DBI:mysql:database=test;host=localhost",
+    user    => 'test', # user,
+    pass    => 'test', # pass
+    opt     => { RaiseError => 1, AutoCommit => 0 },
+    table   => 'users',
+    login_page => '/login',
+    redirect_on_login => '/',
+    redirect_on_logout => '/',
+    not_restricted => [qw(/ /index), { page => '/portfolio', role => 'root', } ],
+    restricted => [ { page => '/portfolio', role => \1 }, qr/^/ ],
+},
+plugins => [ qr/UserLogin/ ],
