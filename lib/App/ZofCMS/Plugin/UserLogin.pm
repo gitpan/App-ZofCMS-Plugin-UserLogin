@@ -3,11 +3,12 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0101';
+our $VERSION = '0.0102';
 use DBI;
 use HTML::Template;
+use Digest::MD5 qw/md5_hex/;
 
-# create TABLE users (login TEXT, password TEXT, login_time VARCHAR(10), session_id VARCHAR(55), role VARCHAR(20));
+# create TABLE users (login TEXT, password VARCHAR(32), login_time VARCHAR(10), session_id VARCHAR(55), role VARCHAR(20));
 
 
 sub new { bless {}, shift }
@@ -23,6 +24,10 @@ sub process {
     my %opts = (
         login_page  => '/login',
         table       => 'users',
+        user_ref    => sub {
+            my ( $user_ref, $template ) = @_;
+            $template->{d}{plug_login_user} = $user_ref;
+        },
         opt         => { RaiseError => 1, AutoCommit => 0 },
         redirect_on_restricted => '/',
         %{ $config->conf->{plug_login}    || {} },
@@ -50,7 +55,11 @@ sub process {
         $self->process_login_page( $template, \%query, $config );
     }
 
-    my $user_ref = $self->is_logged_in( \%query, $config );
+    my ( $user_ref, $user_ref_raw ) = $self->is_logged_in( \%query, $config );
+
+    if ( $opts{user_ref} ) {
+        $opts{user_ref}->( $user_ref_raw, $template, $query_ref, $config->conf );
+    }
 
     if ( $self->is_page_restricted( $query{page}, $user_ref ) ) {
         if ( $opts{redirect_on_restricted} ) {
@@ -181,7 +190,7 @@ sub is_logged_in {
 
     my $user_ref;
     for ( @$users ) {
-        if ( crypt($_->[0], "zo") eq $login_hash ) { # login
+        if ( md5_hex($_->[0]) eq $login_hash ) { # login
             $user_ref = $_;
             last;
         }
@@ -190,6 +199,7 @@ sub is_logged_in {
     $user_ref
         or return;
 
+    my $user_ref_raw = $user_ref;
     @{ $user_ref = {} }{ qw/login password login_time session_id role/ }
     = @$user_ref;
     $user_ref->{role} = { map { $_ => 1 } split /,/, $user_ref->{role} };
@@ -213,7 +223,7 @@ sub is_logged_in {
         $user_ref->{login},
     );
 
-    return $user_ref;
+    return $user_ref, $user_ref_raw;
 }
 
 sub process_login_page {
@@ -242,7 +252,7 @@ sub process_login_page {
         else {
             print "Set-Cookie: zofcms_plug_login_s=$session_id\n";
             printf "Set-Cookie: zofcms_plug_login_l=%s\n",
-                crypt($query->{login}, "zo");
+                md5_hex($query->{login});
         }
 
         if ( $opts->{redirect_on_login} ) {
@@ -266,7 +276,7 @@ sub login_user {
         "SELECT * FROM $opts->{table} WHERE login = ? AND password = ?;",
         undef,
         $login,
-        crypt($pass, "zo"),
+        md5_hex($pass),
     );
 # create TABLE users (login TEXT, password TEXT, login_time VARCHAR(10), session_id VARCHAR(55), role VARCHAR(20));
     unless ( @$users_ref ) {
@@ -359,12 +369,13 @@ App::ZofCMS::Plugin::UserLogin - restrict access to pages based on user accounts
 In $your_database_of_choice that is supported by L<DBI> create a table.
 You can have extra columns in it, but the first five must be named as appears
 below. C<login_time> is the return of Perl's C<time()>. Password will be
-C<crypt()>ed, C<session_id> is C<rand() . rand() . rand()> and role depends
+C<md5_hex()>ed (with L<Digest::MD5>,
+C<session_id> is C<rand() . rand() . rand()> and role depends
 on what you set the roles to be:
 
     create TABLE users (
         login TEXT,
-        password TEXT,
+        password VARCHAR(32),
         login_time VARCHAR(10),
         session_id VARCHAR(55),
         role VARCHAR(20)
@@ -439,6 +450,10 @@ The user with that role is member of role "foo", "bar" and "baz".
         pass                    => 'test',
         opt                     => { RaiseError => 1, AutoCommit => 0 },
         table                   => 'users',
+        user_ref    => sub {
+            my ( $user_ref, $template ) = @_;
+            $template->{d}{plug_login_user} = $user_ref;
+        },
         login_page              => '/login',
         redirect_on_restricted  => '/login',
         redirect_on_login       => '/',
@@ -486,6 +501,30 @@ For format of this table see L<SYNOPSYS> section. B<Defaults to:> C<users>
 
 B<Optional>. Will be passed directly to C<DBI>'s C<connect_cached()> method
 as "options". B<Defaults to:> C<< { RaiseError => 1, AutoCommit => 0 } >>
+
+=head2 C<user_ref>
+
+    user_ref => sub {
+        my ( $user_ref, $template ) = @_;
+        $template->{d}{plug_login_user} = $user_ref;
+    },
+
+B<Optional>. Takes a subref as an argument. When specified the subref will be called and
+its C<@_> will contain the following: C<$user_ref>, C<$template_ref>, C<$query_ref>,
+C<$config_obj>, where C<$user_ref> will be either C<undef> (e.g. when user is not logged on)
+or will contain an arrayref with user data pulled from the SQL table, i.e. an arrayref
+with all the columns in a table that correspond to the currently logged in user.
+The C<$template_ref> is
+the reference to your ZofCMS template, C<$query_ref> is the reference to a query hashref as
+is returned from L<CGI>'s C<Vars()> call. Finally, C<$config_obj> is the L<App::ZofCMS::Config>
+object. Basically you'd use C<user_ref> to stick user's data into your ZofCMS template for
+later processing, e.g. displaying parts of it or making it accessible to other plugins.
+B<Defaults to:> (will stick user data into C<{d}{plug_login_user}> in ZofCMS template)
+
+    user_ref    => sub {
+        my ( $user_ref, $template ) = @_;
+        $template->{d}{plug_login_user} = $user_ref;
+    },
 
 =head2 C<login_page>
 
@@ -655,7 +694,7 @@ control that).
     no_cookies => 1,
 
 B<Optional>. When set to a false value plugin will set two cookies:
-C<crypt()>ed user login and session ID. When set to a true value plugin
+C<md5_hex()>ed user login and session ID. When set to a true value plugin
 will not set any cookies and instead will put session ID into
 C<plug_login_session_id> key under ZofCMS template's C<{t}> special key.
 

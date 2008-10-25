@@ -1,5 +1,8 @@
 Revision history for App-ZofCMS-Plugin-UserLogin
 
+0.0102  October 25, 2008
+        Changed crypt() to md5_hex() from Digest::MD5
+
 0.0101  October 10, 2008
         First version, released on an unsuspecting world.
 
