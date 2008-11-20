@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0102';
+our $VERSION = '0.0103';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
@@ -175,8 +175,12 @@ sub is_logged_in {
     my ( $self, $query, $config) = @_;
 
     my $opts = $self->opts;
-    my $login_hash = $config->cgi->cookie('zofcms_plug_login_l');
-    my $session_id = $config->cgi->cookie('zofcms_plug_login_s');
+    my ( $cookie_l, $cookie_s ) = ( $self->cookie_l, $self->cookie_s );
+    my $login_hash =
+        defined $cookie_l ? $cookie_l : $config->cgi->cookie('zofcms_plug_login_l');
+
+    my $session_id =
+        defined $cookie_s ? $self->cookie_s : $config->cgi->cookie('zofcms_plug_login_s');
 
     my $dbh = DBI->connect_cached(
         @$opts{ qw/dsn user pass opt/ }
@@ -259,7 +263,11 @@ sub process_login_page {
             print $config->cgi->redirect( $opts->{redirect_on_login} );
             exit;
         }
-        
+        else {
+            $self->cookie_l( md5_hex($query->{login}) );
+            $self->cookie_s( $session_id );
+        }
+
         return 1;
     }
 }
@@ -355,6 +363,18 @@ sub logout_form_template {
 </div>
 </form>
 END_TEMPLATE
+}
+
+sub cookie_l {
+    my $self = shift;
+    @_ and $self->{COOKIE_L} = shift;
+    $self->{COOKIE_L};
+}
+
+sub cookie_s {
+    my $self = shift;
+    @_ and $self->{COOKIE_S} = shift;
+    $self->{COOKIE_S};
 }
 
 1;
