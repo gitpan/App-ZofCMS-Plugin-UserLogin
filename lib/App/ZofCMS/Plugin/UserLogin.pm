@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0103';
+our $VERSION = '0.0113';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
@@ -234,6 +234,8 @@ sub process_login_page {
     my ( $self, $template, $query, $config ) = @_;
     my $opts = $self->opts;
 
+    $query->{login} = lc $query->{login};
+
     if ( $query->{zofcms_plugin_login} ne 'login_user' ) {
         $template->{t}{plug_login_form} = $self->make_login_form(
             page => $query->{page},
@@ -275,6 +277,8 @@ sub process_login_page {
 sub login_user {
     my ( $self, $login, $pass ) = @_;
     my $opts = $self->opts;
+
+    $login = lc $login;
 
     my $dbh = DBI->connect_cached(
         @$opts{ qw/dsn user pass opt/ }
@@ -340,14 +344,14 @@ sub login_form_template {
     <ul>
         <li>
             <label for="zofcms_plugin_login_login">Login: </label
-            ><input type="text" name="login" id="zofcms_plugin_login_login">
+            ><input type="text" class="input_text" name="login" id="zofcms_plugin_login_login">
         </li>
         <li>
             <label for="zofcms_plugin_login_pass">Password: </label
-            ><input type="password" name="pass" id="zofcms_plugin_login_pass">
+            ><input type="password" class="input_password" name="pass" id="zofcms_plugin_login_pass">
         </li>
     </ul>
-    <input type="submit" value="Login">
+    <input type="submit" class="input_submit" value="Login">
 </div>
 </form>
 END_TEMPLATE
@@ -359,7 +363,7 @@ sub logout_form_template {
 <div><tmpl_if name="error"><p class="error"><tmpl_var name="error"></p></tmpl_if>
     <input type="hidden" name="page" value="<tmpl_var name="page">">
     <input type="hidden" name="zofcms_plugin_login" value="logout_user">
-    <input type="submit" value="Logout">
+    <input type="submit" class="input_submit" value="Logout">
 </div>
 </form>
 END_TEMPLATE
@@ -435,6 +439,11 @@ Plugin uses HTTP cookies to set user sessions.
 
 This documentation assumes you've read L<App::ZofCMS>,
 L<App::ZofCMS::Config> and L<App::ZofCMS::Template>
+
+=head1 NOTE ON LOGINS
+
+Plugin makes the logins B<lowercased> when doing its processing; thus C<FooBar> login
+is the same as C<foobar>.
 
 =head1 NOTE ON REDIRECTS
 
@@ -788,14 +797,14 @@ reference when styling your login/logout forms.
         <ul>
             <li>
                 <label for="zofcms_plugin_login_login">Login: </label
-                ><input type="text" name="login" id="zofcms_plugin_login_login">
+                ><input type="text" class="input_text" name="login" id="zofcms_plugin_login_login">
             </li>
             <li>
                 <label for="zofcms_plugin_login_pass">Password: </label
-                ><input type="password" name="pass" id="zofcms_plugin_login_pass">
+                ><input type="password" class="input_password" name="pass" id="zofcms_plugin_login_pass">
             </li>
         </ul>
-        <input type="submit" value="Login">
+        <input type="submit" class="input_submit" value="Login">
     </div>
     </form>
 
@@ -805,7 +814,7 @@ reference when styling your login/logout forms.
     <div>
         <input type="hidden" name="page" value="/login">
         <input type="hidden" name="zofcms_plugin_login" value="logout_user">
-        <input type="submit" value="Logout">
+        <input type="submit" class="input_submit" value="Logout">
     </div>
     </form>
 

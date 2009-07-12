@@ -1,5 +1,10 @@
 Revision history for App-ZofCMS-Plugin-UserLogin
 
+0.0113  July 11, 2009
+        Added classes to text, password and submit inputs for styling
+        Fixed a bug where using wrong case would make the user log in, but would
+        not redirect properly (made logins become lowercase)
+
 0.0103  November 19, 2008
         Fixed a bug that did not allow to inspect "user dataref" on the login page 
 
