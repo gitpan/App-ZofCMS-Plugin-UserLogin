@@ -1,5 +1,8 @@
 Revision history for App-ZofCMS-Plugin-UserLogin
 
+0.0114  July 11, 2009
+        Fixed a bug where <tmpl_var>s where used without HTML escaping
+
 0.0113  July 11, 2009
         Added classes to text, password and submit inputs for styling
         Fixed a bug where using wrong case would make the user log in, but would

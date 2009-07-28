@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0113';
+our $VERSION = '0.0114';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
@@ -338,8 +338,8 @@ sub login_error {
 sub login_form_template {
     return <<'END_TEMPLATE';
 <form action="" method="POST" id="zofcms_plugin_login">
-<div><tmpl_if name="error"><p class="error"><tmpl_var name="error"></p></tmpl_if>
-    <input type="hidden" name="page" value="<tmpl_var name="page">">
+<div><tmpl_if name="error"><p class="error"><tmpl_var escape="html" name="error"></p></tmpl_if>
+    <input type="hidden" name="page" value="<tmpl_var escape="html" name="page">">
     <input type="hidden" name="zofcms_plugin_login" value="login_user">
     <ul>
         <li>
@@ -360,8 +360,8 @@ END_TEMPLATE
 sub logout_form_template {
     return <<'END_TEMPLATE';
 <form action="" method="POST" id="zofcms_plugin_login_logout">
-<div><tmpl_if name="error"><p class="error"><tmpl_var name="error"></p></tmpl_if>
-    <input type="hidden" name="page" value="<tmpl_var name="page">">
+<div><tmpl_if name="error"><p class="error"><tmpl_var escape="html" name="error"></p></tmpl_if>
+    <input type="hidden" name="page" value="<tmpl_var escape="html" name="page">">
     <input type="hidden" name="zofcms_plugin_login" value="logout_user">
     <input type="submit" class="input_submit" value="Logout">
 </div>

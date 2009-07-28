@@ -1,22 +1,24 @@
 ---
 name: App-ZofCMS-Plugin-UserLogin
-version: 0.0113
+version: 0.0114
 author:
   - 'Zoffix Znet <zoffix@cpan.org>'
 abstract: restrict access to pages based on user accounts
 license: perl
 resources:
   license: http://dev.perl.org/licenses/
+build_requires:
+  Test::More: 0
 requires:
   DBI: 1.602
   HTML::Template: 2.9
-build_requires:
-  Test::More: 0
+configure_requires:
+  Module::Build: 0.34
 provides:
   App::ZofCMS::Plugin::UserLogin:
     file: lib/App/ZofCMS/Plugin/UserLogin.pm
-    version: 0.0113
-generated_by: Module::Build version 0.280801
+    version: 0.0114
+generated_by: Module::Build version 0.34
 meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
