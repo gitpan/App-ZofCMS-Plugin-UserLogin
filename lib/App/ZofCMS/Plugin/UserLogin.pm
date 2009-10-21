@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0114';
+our $VERSION = '0.0115';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
@@ -68,7 +68,8 @@ sub process {
         }
     }
     if ( $user_ref ) {
-        if ( $query{zofcms_plugin_login} eq 'logout_user' ) {
+        if ( exists $query{zofcms_plugin_login}
+            and $query{zofcms_plugin_login} eq 'logout_user' ) {
             $self->log_user_out( $user_ref );
             if ( $opts{redirect_on_logout} ) {
                 print $config->cgi->redirect( $opts{redirect_on_logout} );
@@ -236,7 +237,8 @@ sub process_login_page {
 
     $query->{login} = lc $query->{login};
 
-    if ( $query->{zofcms_plugin_login} ne 'login_user' ) {
+    if ( exists $query{zofcms_plugin_login}
+            and $query->{zofcms_plugin_login} ne 'login_user' ) {
         $template->{t}{plug_login_form} = $self->make_login_form(
             page => $query->{page},
         );
