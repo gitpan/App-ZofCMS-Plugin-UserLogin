@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0115';
+our $VERSION = '0.0116';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
@@ -237,7 +237,7 @@ sub process_login_page {
 
     $query->{login} = lc $query->{login};
 
-    if ( exists $query{zofcms_plugin_login}
+    if ( exists $query->{zofcms_plugin_login}
             and $query->{zofcms_plugin_login} ne 'login_user' ) {
         $template->{t}{plug_login_form} = $self->make_login_form(
             page => $query->{page},
