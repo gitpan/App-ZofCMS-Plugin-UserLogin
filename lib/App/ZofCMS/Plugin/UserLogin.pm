@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0201';
+our $VERSION = '0.0210';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
@@ -31,6 +31,10 @@ sub process {
         },
         opt         => { RaiseError => 1, AutoCommit => 0 },
         redirect_on_restricted => '/',
+        
+        login_button => '<input type="submit" class="input_submit" value="Login">',
+        logout_button => '<input type="submit" class="input_submit" value="Logout">',
+        
         %{ $config->conf->{plug_login}    || {} },
         %{ delete $template->{plug_login} || {} },
     );
@@ -89,7 +93,10 @@ sub process {
             my $t = HTML::Template->new_scalar_ref(
                 \ $self->logout_form_template()
             );
-            $t->param( page => $query{page} );
+            $t->param(
+                page            => $query{page},
+                logout_button   => $opts{logout_button},
+            );
             $template->{t}{plug_login_logout} = $t->output;
         }
 
@@ -248,6 +255,7 @@ sub process_login_page {
 
     if ( $query->{zofcms_plugin_login} ne 'login_user' ) {
         $template->{t}{plug_login_form} = $self->make_login_form(
+            login_button => $opts->{login_button},
             page => $query->{page},
             (
                 $opts->{preserve_login}
@@ -262,6 +270,7 @@ sub process_login_page {
         my $session_id = $self->login_user( @$query{ qw/login pass/ } );
         unless ( $session_id ) {
             $template->{t}{plug_login_form} = $self->make_login_form(
+                login_button => $opts->{login_button},
                 error => $self->login_error,
                 page  => $query->{page},
                 (
@@ -278,11 +287,11 @@ sub process_login_page {
             $template->{t}{plug_login_session_id} = $session_id;
         }
         else {
-            print "Set-Cookie: $opts->{preserve_login}=$query->{login}\n"
-                if $opts->{preserve_login};
+#             print "Set-Cookie: $opts->{preserve_login}=$query->{login}; path=/; expires=Sat, 23 May 2037 23:38:25 GMT\n"
+#                 if $opts->{preserve_login};
 
-            print "Set-Cookie: zofcms_plug_login_s=$session_id\n";
-            printf "Set-Cookie: zofcms_plug_login_l=%s\n",
+            print "Set-Cookie: zofcms_plug_login_s=$session_id; path=/;\n";
+            printf "Set-Cookie: zofcms_plug_login_l=%s; path=/;\n",
                 md5_hex($query->{login});
         }
 
@@ -420,7 +429,7 @@ sub login_form_template {
             ><input type="password" class="input_password" name="pass" id="zofcms_plugin_login_pass">
         </li>
     </ul>
-    <input type="submit" class="input_submit" value="Login">
+    <tmpl_var name='login_button'>
 </div>
 </form>
 END_TEMPLATE
@@ -432,7 +441,7 @@ sub logout_form_template {
 <div><tmpl_if name="error"><p class="error"><tmpl_var escape="html" name="error"></p></tmpl_if>
     <input type="hidden" name="page" value="<tmpl_var escape="html" name="page">">
     <input type="hidden" name="zofcms_plugin_login" value="logout_user">
-    <input type="submit" class="input_submit" value="Logout">
+    <tmpl_var name='logout_button'>
 </div>
 </form>
 END_TEMPLATE
@@ -493,6 +502,10 @@ Main config file:
         restricted              => [ qr/^/ ],
         smart_deny              => 'login_redirect_page',
         preserve_login          => 'my_site_login',
+        login_button => '<input type="submit"
+            class="input_submit" value="Login">',
+        logout_button => '<input type="submit"
+            class="input_submit" value="Logout">',
     },
 
 In L<HTML::Template> template for C<'/login'> page:
@@ -562,6 +575,10 @@ The user with that role is member of role "foo", "bar" and "baz".
         restricted              => [ qr/^/ ],
         smart_deny              => 'login_redirect_page',
         preserve_login          => 'my_site_login',
+        login_button => '<input type="submit"
+            class="input_submit" value="Login">',
+        logout_button => '<input type="submit"
+            class="input_submit" value="Logout">',
     },
 
 These settings can be set via C<plug_login> first-level key in ZofCMS
@@ -678,6 +695,26 @@ as a value. When specified, the plugin will automatically
 out, the username from last successfull login. This option only works
 when C<no_cookies> is set to a false value (that's the default).
 B<By default> is not specified
+
+=head2 C<login_button>
+
+    login_button => '<input type="submit"
+            class="input_submit" value="Login">',
+
+B<Optional>. Takes HTML code for the login button, though, feel free to
+use it as an insertion point for any extra code you might want in your
+login form. B<Defaults to:>
+C<< <input type="submit" class="input_submit" value="Login"> >>
+
+=head2 C<logout_button>
+
+    logout_button => '<input type="submit"
+        class="input_submit" value="Logout">'
+
+B<Optional>. Takes HTML code for the logout button, though, feel free to
+use it as an insertion point for any extra code you might want in your
+logout form. B<Defaults to:>
+C<< <input type="submit" class="input_submit" value="Logout"> >>
 
 =head2 C<redirect_on_logout>
 

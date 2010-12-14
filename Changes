@@ -1,5 +1,11 @@
 Revision history for App-ZofCMS-Plugin-UserLogin
 
+0.0210  December 14, 2010
+        Added option to set login and logout button to arbitrary code
+        Fixed `preserve_login` cookie's premature expiry
+        Fixed a cookie setup bug that broke the plugin when the login page
+            was deeper than web root
+
 0.0201  December 14, 2010
         Added the `smart_deny` functionality
         Added the `preserve_login` functionality
