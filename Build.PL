@@ -11,8 +11,9 @@ my $builder = Module::Build->new(
         'Test::More' => 0,
     },
     requires => {
-        'DBI'            => 1.602,
-        'HTML::Template' => 2.9,
+        'DBI'               => 1.602,
+        'HTML::Template'    => 2.9,
+        'URI::Escape'       => 3.29,
     },
     add_to_cleanup      => [ 'App-ZofCMS-Plugin-UserLogin-*' ],
     create_makefile_pl => 'traditional',

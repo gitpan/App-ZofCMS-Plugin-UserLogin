@@ -3,10 +3,11 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0116';
+our $VERSION = '0.0201';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
+use URI::Escape;
 
 # create TABLE users (login TEXT, password VARCHAR(32), login_time VARCHAR(10), session_id VARCHAR(55), role VARCHAR(20));
 
@@ -36,6 +37,11 @@ sub process {
 
     $self->opts( \%opts );
 
+    $self->{COOKIE_LOGIN} = $config->cgi->cookie( $opts{preserve_login} )
+        if defined $opts{preserve_login}
+            and length $opts{preserve_login}
+            and not $opts{no_cookies};
+
     my %query = %$query_ref;
     for ( values %query ) {
         $_ = ''
@@ -63,7 +69,10 @@ sub process {
 
     if ( $self->is_page_restricted( $query{page}, $user_ref ) ) {
         if ( $opts{redirect_on_restricted} ) {
-            print $config->cgi->redirect( $opts{redirect_on_restricted} );
+            print $config->cgi->redirect(
+                $opts{redirect_on_restricted}
+                . process_smart_deny( \%opts, $query{page} )
+            );
             exit;
         }
     }
@@ -237,10 +246,15 @@ sub process_login_page {
 
     $query->{login} = lc $query->{login};
 
-    if ( exists $query->{zofcms_plugin_login}
-            and $query->{zofcms_plugin_login} ne 'login_user' ) {
+    if ( $query->{zofcms_plugin_login} ne 'login_user' ) {
         $template->{t}{plug_login_form} = $self->make_login_form(
             page => $query->{page},
+            (
+                $opts->{preserve_login}
+                ? ( cookie_login => $self->{COOKIE_LOGIN} ) : ()
+            ),
+            smart_deny_name  => $opts->{smart_deny},
+            smart_deny_value => $query->{ $opts->{smart_deny} },
         );
         return 1;
     }
@@ -250,6 +264,12 @@ sub process_login_page {
             $template->{t}{plug_login_form} = $self->make_login_form(
                 error => $self->login_error,
                 page  => $query->{page},
+                (
+                    $opts->{preserve_login}
+                    ? ( cookie_login => $self->{COOKIE_LOGIN} ) : ()
+                ),
+                smart_deny_name     => $opts->{smart_deny},
+                smart_deny_value    => $query->{ $opts->{smart_deny} },
             );
             return;
         }
@@ -258,13 +278,18 @@ sub process_login_page {
             $template->{t}{plug_login_session_id} = $session_id;
         }
         else {
+            print "Set-Cookie: $opts->{preserve_login}=$query->{login}\n"
+                if $opts->{preserve_login};
+
             print "Set-Cookie: zofcms_plug_login_s=$session_id\n";
             printf "Set-Cookie: zofcms_plug_login_l=%s\n",
                 md5_hex($query->{login});
         }
 
         if ( $opts->{redirect_on_login} ) {
-            print $config->cgi->redirect( $opts->{redirect_on_login} );
+            print $config->cgi->redirect(
+                process_smart_deny_logon( $opts, $query )
+            );
             exit;
         }
         else {
@@ -316,7 +341,15 @@ sub make_login_form {
 
     my $t = HTML::Template->new_scalar_ref( \ login_form_template() );
 
-    $t->param( \%args );
+    $t->param(
+        %args,
+        smart_deny => (
+            (
+                defined $args{smart_deny_name}
+                and length $args{smart_deny_name}
+            ) ? 1 : 0
+        ),
+    );
 
     return $t->output;
 }
@@ -337,16 +370,50 @@ sub login_error {
     return $self->{LOGIN_ERROR};
 }
 
+sub process_smart_deny_logon {
+    my ( $opts, $q ) = @_;
+
+    return $opts->{redirect_on_login}
+        unless defined $opts->{smart_deny}
+            and length $opts->{smart_deny}
+            and defined $q->{ $opts->{smart_deny} }
+            and length $q->{ $opts->{smart_deny} };
+
+    return $q->{ $opts->{smart_deny} };
+}
+
+sub process_smart_deny {
+    my ( $opts, $query_page ) = @_;
+    
+    return ''
+        unless defined $opts->{smart_deny}
+            and length $opts->{smart_deny};
+
+    use Data::Dumper;
+    
+
+    my $appended_value = $opts->{redirect_on_restricted} =~ /\?/
+    ? '' : '?';
+
+    $appended_value .= $opts->{smart_deny}
+    . '=' . uri_escape( $query_page );
+
+    return $appended_value;
+}
+
 sub login_form_template {
     return <<'END_TEMPLATE';
 <form action="" method="POST" id="zofcms_plugin_login">
 <div><tmpl_if name="error"><p class="error"><tmpl_var escape="html" name="error"></p></tmpl_if>
     <input type="hidden" name="page" value="<tmpl_var escape="html" name="page">">
     <input type="hidden" name="zofcms_plugin_login" value="login_user">
+    <tmpl_if name="smart_deny">
+        <input type="hidden" name="<tmpl_var escape="html" name="smart_deny_name">" value="<tmpl_var escape="html" name="smart_deny_value">">
+    </tmpl_if>
     <ul>
         <li>
             <label for="zofcms_plugin_login_login">Login: </label
-            ><input type="text" class="input_text" name="login" id="zofcms_plugin_login_login">
+            ><input type="text" class="input_text" name="login" id="zofcms_plugin_login_login" value="<tmpl_var escape='html' name='cookie_login'>">
         </li>
         <li>
             <label for="zofcms_plugin_login_pass">Password: </label
@@ -424,6 +491,8 @@ Main config file:
         redirect_on_logout      => '/',
         not_restricted          => [ qw(/ /index) ],
         restricted              => [ qr/^/ ],
+        smart_deny              => 'login_redirect_page',
+        preserve_login          => 'my_site_login',
     },
 
 In L<HTML::Template> template for C<'/login'> page:
@@ -491,6 +560,8 @@ The user with that role is member of role "foo", "bar" and "baz".
         redirect_on_logout      => '/',
         not_restricted          => [ qw(/ /index) ],
         restricted              => [ qr/^/ ],
+        smart_deny              => 'login_redirect_page',
+        preserve_login          => 'my_site_login',
     },
 
 These settings can be set via C<plug_login> first-level key in ZofCMS
@@ -584,6 +655,29 @@ in. B<Defaults to:> C</>
 
 B<Optional>. Specifies the URI to which to redirect after user successfully
 logged in. B<By default> is not specified.
+
+=head2 C<smart_deny>
+
+    smart_deny => 'login_redirect_page',
+
+B<Optional>. Takes a scalar as a value that represents a query parameter
+name into which to store the URI of the page that not-logged-in  user
+attempted to access. This option works only when C<redirect_on_login> is
+specified. When specified, plugin enables the magic to "remember" the page
+that a not-logged-in user tried to access, and once the user enters correct
+login credentials, he is redirected to said page automatically; thereby
+making the login process transparent. B<By default> is not specified.
+
+=head2 C<preserve_login>
+
+    preserve_login => 'my_site_login',
+
+B<Optional>. Takes a scalar that represents the name of a cookie
+as a value. When specified, the plugin will automatically
+(via the cookie, name of which you specify here) remember, and fill
+out, the username from last successfull login. This option only works
+when C<no_cookies> is set to a false value (that's the default).
+B<By default> is not specified
 
 =head2 C<redirect_on_logout>
 
@@ -728,6 +822,7 @@ B<Optional>. When set to a false value plugin will set two cookies:
 C<md5_hex()>ed user login and session ID. When set to a true value plugin
 will not set any cookies and instead will put session ID into
 C<plug_login_session_id> key under ZofCMS template's C<{t}> special key.
+B<By default> is not specified (false).
 
 =head1 HTML::Template TEMPLATE
 
