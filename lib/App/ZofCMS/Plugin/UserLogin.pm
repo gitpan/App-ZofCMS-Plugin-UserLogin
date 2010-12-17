@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0210';
+our $VERSION = '0.0211';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;

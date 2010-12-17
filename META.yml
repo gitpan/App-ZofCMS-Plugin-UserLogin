@@ -15,11 +15,11 @@ name: App-ZofCMS-Plugin-UserLogin
 provides:
   App::ZofCMS::Plugin::UserLogin:
     file: lib/App/ZofCMS/Plugin/UserLogin.pm
-    version: 0.0210
+    version: 0.0211
 requires:
   DBI: 1.602
   HTML::Template: 2.9
   URI::Escape: 3.29
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.0210
+version: 0.0211
