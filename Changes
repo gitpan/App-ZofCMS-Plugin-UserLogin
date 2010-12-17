@@ -1,5 +1,8 @@
 Revision history for App-ZofCMS-Plugin-UserLogin
 
+0.0212  December 18, 2010
+        Ditto... (wtf?)
+
 0.0211  December 17, 2010
         For some reason the `preserve_login` code was commented out in the previous version (testing remnants?)
 

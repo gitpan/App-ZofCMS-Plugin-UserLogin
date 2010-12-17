@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0211';
+our $VERSION = '0.0212';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
@@ -287,8 +287,8 @@ sub process_login_page {
             $template->{t}{plug_login_session_id} = $session_id;
         }
         else {
-#             print "Set-Cookie: $opts->{preserve_login}=$query->{login}; path=/; expires=Sat, 23 May 2037 23:38:25 GMT\n"
-#                 if $opts->{preserve_login};
+            print "Set-Cookie: $opts->{preserve_login}=$query->{login}; path=/; expires=Sat, 23 May 2037 23:38:25 GMT\n"
+                if $opts->{preserve_login};
 
             print "Set-Cookie: zofcms_plug_login_s=$session_id; path=/;\n";
             printf "Set-Cookie: zofcms_plug_login_l=%s; path=/;\n",
