@@ -1,5 +1,8 @@
 Revision history for App-ZofCMS-Plugin-UserLogin
 
+0.0213  December 31, 2010
+        Fixed a bug where `smart_deny` didn't "preserve" query parameters
+
 0.0212  December 18, 2010
         Ditto... (wtf?)
 

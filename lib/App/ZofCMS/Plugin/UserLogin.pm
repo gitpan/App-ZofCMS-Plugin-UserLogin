@@ -3,7 +3,7 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0212';
+our $VERSION = '0.0213';
 use DBI;
 use HTML::Template;
 use Digest::MD5 qw/md5_hex/;
@@ -75,7 +75,7 @@ sub process {
         if ( $opts{redirect_on_restricted} ) {
             print $config->cgi->redirect(
                 $opts{redirect_on_restricted}
-                . process_smart_deny( \%opts, $query{page} )
+                . process_smart_deny( \%opts )
             );
             exit;
         }
@@ -392,7 +392,7 @@ sub process_smart_deny_logon {
 }
 
 sub process_smart_deny {
-    my ( $opts, $query_page ) = @_;
+    my ( $opts ) = @_;
     
     return ''
         unless defined $opts->{smart_deny}
@@ -404,8 +404,7 @@ sub process_smart_deny {
     my $appended_value = $opts->{redirect_on_restricted} =~ /\?/
     ? '' : '?';
 
-    $appended_value .= $opts->{smart_deny}
-    . '=' . uri_escape( $query_page );
+    $appended_value .= $opts->{smart_deny} . '=' . uri_escape( $ENV{REQUEST_URI} );
 
     return $appended_value;
 }
