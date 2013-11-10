@@ -3,10 +3,10 @@ package App::ZofCMS::Plugin::UserLogin;
 use warnings;
 use strict;
 
-our $VERSION = '0.0213';
+our $VERSION = '0.0214';
 use DBI;
 use HTML::Template;
-use Digest::MD5 qw/md5_hex/;
+use Digest::MD5 (qw/md5_hex/);
 use URI::Escape;
 
 # create TABLE users (login TEXT, password VARCHAR(32), login_time VARCHAR(10), session_id VARCHAR(55), role VARCHAR(20));
@@ -460,6 +460,8 @@ sub cookie_s {
 
 1;
 __END__
+
+=encoding utf8
 
 =head1 NAME
 

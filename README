@@ -1,7 +1,8 @@
 App-ZofCMS-Plugin-UserLogin
 
 The module is a plugin for L<App::ZofCMS>; it provides functionality to
-restrict access to some pages based on user accounts (which support "roles")
+restrict access to some pages based on user accounts
+(which support "roles")
 
 Plugin uses HTTP cookies to set user sessions.
 

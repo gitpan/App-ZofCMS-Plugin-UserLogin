@@ -14,7 +14,9 @@ my $builder = Module::Build->new(
         'DBI'               => 1.602,
         'HTML::Template'    => 2.9,
         'URI::Escape'       => 3.29,
+        'perl' => '5.006',
     },
+    configure_requires => { 'Module::Build' => 0 },
     add_to_cleanup      => [ 'App-ZofCMS-Plugin-UserLogin-*' ],
     create_makefile_pl => 'traditional',
 );
